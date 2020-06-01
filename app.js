@@ -14,7 +14,7 @@ class ZOMATO {
   async searchApi(location, categoryID) {
     const categoryURL = `https://developers.zomato.com/api/v2.1/categories`;
     const city = `https://developers.zomato.com/api/v2.1/cities?q=${location}`;
-    const 
+    
 
     const categoryInfo = await fetch(categoryURL, this.header);
     const data = await categoryInfo.json();
@@ -30,9 +30,16 @@ class ZOMATO {
 
     }
 
+    const restaurantURL = `https://developers.zomato.com/api/v2.1/search?entity_id=280&entity_type=${cityID}&category=${categoryID}&sort=rating`
+
+    const restaurantInfo = await fetch(restaurantURL, this.header);
+    const restaurantJSON = await restaurantInfo.json();
+    const restaurants = restaurantJSON.restaurants;
+
     return {
       categories,
-      cityID
+      cityID,
+      restaurants
     };
   }
 }
@@ -40,7 +47,7 @@ class ZOMATO {
 class UI {
   constructor() {
     this.loader = document.querySelector(".loader");
-    this.restaurantsList = document.getElementById("restaurant-list ");
+    this.restaurantsList = document.getElementById("restaurant-list");
   }
 
   addSelectOption(categories) {
@@ -68,6 +75,71 @@ class UI {
   }
   hideLoader(){
     this.loader.classList.remove('showItem')
+  }
+
+  getRestaurants(restaurants){
+    this.hideLoader();
+    if(restaurants.length === 0){
+      this.showFeedback('no such categoris exit in the selected city');
+    } else {
+      this.restaurantsList.innerHTML = '';
+      restaurants.forEach((restaurant) => {
+        const {thumb:img, name, location:{address}, user_rating:{aggregate_rating},cuisines, average_cost_for_two:cost, menu_url, url } = restaurant.restaurant;
+        
+
+      if(img !== ''){
+        this.showRestaurant(img, name, address, aggregate_rating, cuisines, cost, menu_url, url)
+      }
+
+      })
+    }
+
+  }
+
+  showRestaurant(img, name, address, aggregate_rating, cuisines, cost, menu_url, url){
+    const div = document.createElement('div');
+    div.classList.add('col-11', 'mx-auto', 'my-3', 'col-md-4');
+    div.innerHTML = ` <div class="card">
+    <div class="card">
+      <div class="row p-3">
+        <div class="col-5">
+          <img src="${img}" class="img-fluid img-thumbnail" alt="">
+        </div>
+        <div class="col-5 text-capitalize">
+          <h6 class="text-uppercase pt-2 redText">${name}</h6>
+          <p>${address}</p>
+        </div>
+        <div class="col-1">
+          <div class="badge badge-success">
+            ${aggregate_rating}
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="row py-3 ml-1">
+        <div class="col-5 text-uppercase ">
+          <p>cousines :</p>
+          <p>cost for two :</p>
+        </div>
+        <div class="col-7 text-uppercase">
+        <p>${cuisines}</p>
+        <p>${cost}</p>
+        </div>
+      </div>
+      <hr>
+      <div class="row text-center no-gutters pb-3">
+        <div class="col-6">
+          <a href="${menu_url}" target="_blank" class="btn redBtn  text-uppercase"><i class="fas fa-book"></i> menu</a>
+        </div>
+        <div class="col-6">
+          <a href="${url}" target="_blank" class="btn redBtn  text-uppercase"><i class="fas fa-book"></i> website</a>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  this.restaurantsList.appendChild(div)
+   
+
   }
 }
 
@@ -99,7 +171,7 @@ class UI {
         } else {
           ui.showLoader();
           zomato.searchApi(city, categoryID).then(data => {
-            console.log(data)
+            ui.getRestaurants(data.restaurants)
           })
         }
       })
